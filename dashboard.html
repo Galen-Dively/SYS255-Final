@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        .task-list {
+            max-width: 600px;
+            margin: 20px auto;
+        }
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .task-controls {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Welcome to Your Dashboard</h1>
+            <p id="username-display"></p>
+            <a href="logout.php">Logout</a>
+        </header>
+
+        <!-- Add new task form -->
+        <form action="dashboard.php" method="POST" id="add-task-form">
+            <h2>Add New Task</h2>
+            <input type="text" name="task" placeholder="Enter your task" required>
+            <button type="submit" name="action" value="add">Add Task</button>
+        </form>
+
+        <!-- Task list -->
+        <div class="task-list">
+            <h2>Your Tasks</h2>
+            <div id="tasks-container">
+                <!-- Tasks will be loaded here via PHP -->
+            </div>
+        </div>
+    </div>
+</body>
+</html>
