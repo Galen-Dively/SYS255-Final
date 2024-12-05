@@ -14,10 +14,46 @@
             justify-content: space-between;
             padding: 10px;
             border-bottom: 1px solid #ddd;
+            align-items: center;
         }
         .task-controls {
             display: flex;
             gap: 10px;
+        }
+        .completed {
+            text-decoration: line-through;
+            color: gray;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #add-task-form {
+            margin-bottom: 20px;
+        }
+        .error {
+            color: red;
+            margin: 10px 0;
+            display: none;
+        }
+        button {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        input[type="text"] {
+            padding: 5px;
+            min-width: 200px;
         }
     </style>
 </head>
@@ -25,24 +61,206 @@
     <div class="container">
         <header>
             <h1>Welcome to Your Dashboard</h1>
-            <p id="username-display"></p>
-            <a href="logout.php">Logout</a>
+            <div>
+                <span id="username-display"></span>
+                <a href="logout.php" class="logout-btn">Logout</a>
+            </div>
         </header>
 
-        <!-- Add new task form -->
-        <form action="dashboard.php" method="POST" id="add-task-form">
+        <form id="add-task-form">
             <h2>Add New Task</h2>
-            <input type="text" name="task" placeholder="Enter your task" required>
-            <button type="submit" name="action" value="add">Add Task</button>
+            <div>
+                <input type="text" id="task-input" placeholder="Enter your task" required 
+                       minlength="3" maxlength="255">
+                <button type="submit">Add Task</button>
+            </div>
+            <div id="task-error" class="error"></div>
         </form>
 
-        <!-- Task list -->
         <div class="task-list">
             <h2>Your Tasks</h2>
             <div id="tasks-container">
-                <!-- Tasks will be loaded here via PHP -->
+                <!-- Tasks will be loaded here -->
             </div>
+            <div id="loading-message">Loading tasks...</div>
         </div>
     </div>
+
+    <script>
+        // error handling function
+        function handleError(error, elementId) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.style.display = 'block';
+            errorElement.textContent = error.message || 'An error occurred';
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        }
+
+        // function to load tasks from the server
+        async function loadTasks() {
+            const loadingMessage = document.getElementById('loading-message');
+            const tasksContainer = document.getElementById('tasks-container');
+            
+            try {
+                loadingMessage.style.display = 'block';
+                const response = await fetch('dashboard.php?action=get_tasks', {
+                    method: 'GET'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to load tasks');
+                }
+
+                tasksContainer.innerHTML = '';
+                
+                if (data.data.length === 0) {
+                    tasksContainer.innerHTML = '<p>No tasks found. Add your first task above!</p>';
+                    return;
+                }
+
+                data.data.forEach(task => {
+                    const taskElement = document.createElement('div');
+                    taskElement.classList.add('task-item');
+                    taskElement.innerHTML = `
+                        <span class="${task.Status === 'Completed' ? 'completed' : ''}">${escapeHtml(task.Task)}</span>
+                        <div class="task-controls">
+                            <button onclick="completeTask(${task.TaskID})" 
+                                    ${task.Status === 'Completed' ? 'disabled' : ''}>
+                                Complete
+                            </button>
+                            <button onclick="deleteTask(${task.TaskID})">Delete</button>
+                        </div>
+                    `;
+                    tasksContainer.appendChild(taskElement);
+                });
+            } catch (error) {
+                handleError(error, 'task-error');
+            } finally {
+                loadingMessage.style.display = 'none';
+            }
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // adding task
+        document.getElementById('add-task-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const taskInput = document.getElementById('task-input');
+            const task = taskInput.value.trim();
+            
+            try {
+                if (task.length < 3 || task.length > 255) {
+                    throw new Error('Task must be between 3 and 255 characters');
+                }
+
+                const response = await fetch('dashboard.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        action: 'add',
+                        task: task
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to add task');
+                }
+
+                await loadTasks();
+                taskInput.value = '';
+            } catch (error) {
+                handleError(error, 'task-error');
+            }
+        });
+
+        // complete task
+        async function completeTask(taskId) {
+            try {
+                const response = await fetch('dashboard.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        action: 'complete',
+                        task_id: taskId
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to complete task');
+                }
+
+                await loadTasks();
+            } catch (error) {
+                handleError(error, 'task-error');
+            }
+        }
+
+        // delete task
+        async function deleteTask(taskId) {
+            if (!confirm('Are you sure you want to delete this task?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('dashboard.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        action: 'delete',
+                        task_id: taskId
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to delete task');
+                }
+
+                await loadTasks();
+            } catch (error) {
+                handleError(error, 'task-error');
+            }
+        }
+
+        // load tasks
+        document.addEventListener('DOMContentLoaded', loadTasks);
+    </script>
 </body>
 </html>
