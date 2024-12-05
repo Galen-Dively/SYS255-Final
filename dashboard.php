@@ -1,17 +1,17 @@
 <?php
 session_start();
 
-// Check if user is logged in
+// check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.html");
     exit();
 }
 
-// Database connection using PDO with error handling
+// database connection 
 try {
     $dsn = "mysql:host=localhost;dbname=websiteDB;charset=utf8mb4";
-    $username = "web_server";
-    $password = "jZ5/=nFwAuMRm_y(9%dBU";
+    $username = "";
+    $password = "";
     $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
