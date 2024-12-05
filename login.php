@@ -4,7 +4,7 @@ session_start();
 // Database connection
 $servername = "localhost";
 $username = "web_server";
-$password = "";
+$password = "jZ5/=nFwAuMRm_y(9%dBU";
 $dbname = "websiteDB";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
@@ -14,8 +14,12 @@ if ($conn->connect_error) {
 
 // Check if form is submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Basic sanitization
+    // Basic sanitization for username
     $login_user = trim($_POST['username']);
+    $login_user = preg_replace("/[^A-Za-z0-9_]/", "", $login_user); // Remove non-alphanumeric characters
+    $login_user = htmlspecialchars($login_user); // Escape any remaining special characters
+
+    // Sanitize password (trim whitespace)
     $login_pass = trim($_POST['pass']);
 
     // Check if the username exists
