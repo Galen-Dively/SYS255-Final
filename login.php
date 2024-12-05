@@ -2,10 +2,10 @@
 session_start();
 
 // Database connection
-$servername = "localhost";
-$username = "web_server";
-$password = "jZ5/=nFwAuMRm_y(9%dBU";
-$dbname = "websiteDB";
+$servername = "";
+$username = "";
+$password = "";
+$dbname = "";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
